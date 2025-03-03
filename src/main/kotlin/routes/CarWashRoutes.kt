@@ -1,4 +1,4 @@
-package kg.automoika.data.routes
+package kg.automoika.routes
 
 import io.ktor.client.*
 import io.ktor.client.call.*
@@ -12,6 +12,7 @@ import io.ktor.server.response.*
 import io.ktor.server.routing.*
 import kg.automoika.data.CarWashModel
 import kg.automoika.repository.CarWashRepository
+import org.jetbrains.exposed.exceptions.ExposedSQLException
 import org.koin.ktor.ext.inject
 import java.lang.reflect.Constructor
 
@@ -27,6 +28,16 @@ fun Route.carWashRoutes() {
         else call.respond(HttpStatusCode.Conflict)
     }
 
+    post("v1/add-task"){
+        try {
+            val result = repository.addTask()
+            result?.let {
+                call.respond(HttpStatusCode.OK)
+            } ?: call.respond(HttpStatusCode.NotImplemented,"Error adding car wash")
+        }catch (e: ExposedSQLException){
+            call.respond(HttpStatusCode.BadRequest,e.message ?: "SQL Exception!!")
+        }
+    }
 
 
 }

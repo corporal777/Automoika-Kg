@@ -8,6 +8,7 @@ import io.ktor.server.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.server.plugins.swagger.swaggerUI
 import io.ktor.server.routing.routing
 import io.ktor.server.tomcat.EngineMain
+import kg.automoika.db.DatabaseUtils
 import kg.automoika.repository.CarWashRepository
 import kg.automoika.repository.CarWashRepositoryImpl
 import org.koin.core.scope.Scope
@@ -29,19 +30,21 @@ fun Application.module() {
                 single { getMongoDatabaseProperty(this) }
             },
             module {
-                single<CarWashRepository> { CarWashRepositoryImpl(get()) }
+                single { DatabaseUtils }
+                single<CarWashRepository> { CarWashRepositoryImpl(get(), get()) }
             })
     }
     configureRouting()
+    configureDatabases()
 }
 
 private fun Application.getMongoUriProperty(): String {
-    val url = "mongodb+srv://flay:3tnXuYZbkHL0bGH2@clustercarwash.fn4om.mongodb.net/?retryWrites=true&w=majority&appName=ClusterCarWash"
-//    return environment.config.propertyOrNull(url)?.getString()
-//        ?: throw RuntimeException("Failed to access MongoDB URI.")
-    return url
+    return environment.config.propertyOrNull("ktor.mongo.uri")?.getString()
+        ?: throw RuntimeException("Failed to access MongoDataBase URI.")
 }
 
 private fun Application.getMongoDatabaseProperty(scope: Scope): MongoDatabase {
-    return scope.get<MongoClient>().getDatabase("CarWashDatabase")
+    val dbName = environment.config.propertyOrNull("ktor.mongo.database")?.getString()
+        ?: throw RuntimeException("Failed to access MongoDataBase")
+    return scope.get<MongoClient>().getDatabase(dbName)
 }
