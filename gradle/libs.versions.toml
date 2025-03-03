@@ -1,0 +1,23 @@
+[versions]
+kotlin-version = "2.1.10"
+ktor-version = "3.1.1"
+logback-version = "1.4.14"
+mongo-version = "4.10.1"
+koin-version = "3.5.3"
+
+[libraries]
+ktor-server-core = { module = "io.ktor:ktor-server-core-jvm", version.ref = "ktor-version" }
+
+ktor-server-tomcat-jakarta = { module = "io.ktor:ktor-server-tomcat-jakarta", version.ref = "ktor-version" }
+logback-classic = { module = "ch.qos.logback:logback-classic", version.ref = "logback-version" }
+ktor-server-test-host = { module = "io.ktor:ktor-server-test-host", version.ref = "ktor-version" }
+kotlin-test-junit = { module = "org.jetbrains.kotlin:kotlin-test-junit", version.ref = "kotlin-version" }
+
+mongo-db = { module = "org.mongodb:mongodb-driver-kotlin-coroutine", version.ref = "mongo-version"}
+koin = { module = "io.insert-koin:koin-ktor", version.ref = "koin-version"}
+koin-log = { module = "io.insert-koin:koin-logger-slf4j", version.ref = "koin-version"}
+
+
+[plugins]
+kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin-version" }
+ktor = { id = "io.ktor.plugin", version.ref = "ktor-version" }
