@@ -38,6 +38,17 @@ dependencies {
     implementation("io.ktor:ktor-server-tomcat-jvm")
     implementation("ch.qos.logback:logback-classic:$logback_version")
     implementation("io.ktor:ktor-server-config-yaml:2.3.8")
+    implementation("io.ktor:ktor-server-websockets:$ktor_version")
+    implementation("io.ktor:ktor-network:$ktor_version")
+
+
+    //ktor client
+    implementation("io.ktor:ktor-client-core:$ktor_version")
+    implementation("io.ktor:ktor-client-cio:$ktor_version")
+    implementation("io.ktor:ktor-client-cio-jvm:$ktor_version")
+    implementation("io.ktor:ktor-client-content-negotiation:$ktor_version")
+    implementation("io.ktor:ktor-serialization-kotlinx-json:$ktor_version")
+    implementation("io.ktor:ktor-client-logging:$ktor_version")
 
     //MongoDB
     implementation("org.mongodb:mongodb-driver-kotlin-coroutine:$mongo_version")
@@ -46,17 +57,15 @@ dependencies {
     implementation("io.insert-koin:koin-ktor:$koin_version")
     implementation("io.insert-koin:koin-logger-slf4j:$koin_version")
 
-    //Client
-    implementation("io.ktor:ktor-client-core:$ktor_version")
-    implementation("io.ktor:ktor-client-cio:$ktor_version")
-
     //exposed
     implementation("org.jetbrains.exposed:exposed-core:$exposed_version")
     implementation("org.jetbrains.exposed:exposed-dao:$exposed_version")
     implementation("org.jetbrains.exposed:exposed-jdbc:$exposed_version")
     implementation("com.h2database:h2:$h2_version")
-
     implementation("org.postgresql:postgresql:42.2.2")
+
+    //Firebase
+    implementation("com.google.firebase:firebase-admin:7.1.0")
 }
 
 

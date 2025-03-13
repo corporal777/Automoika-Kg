@@ -1,22 +1,24 @@
 package kg.automoika
 
 import com.mongodb.kotlin.client.coroutine.MongoClient
-import com.mongodb.kotlin.client.coroutine.MongoDatabase
 import io.ktor.serialization.gson.gson
 import io.ktor.server.application.*
 import io.ktor.server.plugins.contentnegotiation.ContentNegotiation
-import io.ktor.server.plugins.swagger.swaggerUI
-import io.ktor.server.routing.routing
 import io.ktor.server.tomcat.EngineMain
-import kg.automoika.db.DatabaseUtils
-import kg.automoika.repository.CarWashRepository
-import kg.automoika.repository.CarWashRepositoryImpl
-import org.koin.core.scope.Scope
+import kg.automoika.cache.AppData
+import kg.automoika.db.AuthDatabase
+import kg.automoika.db.CarWashDatabase
+import kg.automoika.di.dataBaseModule
+import kg.automoika.di.mongoModule
+import kg.automoika.di.repositoryModule
+import kg.automoika.repository.*
 import org.koin.dsl.module
 import org.koin.ktor.plugin.Koin
 import org.koin.logger.slf4jLogger
 
-fun main(args: Array<String>): Unit = EngineMain.main(args)
+fun main(args: Array<String>): Unit {
+    EngineMain.main(args)
+}
 
 fun Application.module() {
     install(ContentNegotiation) {
@@ -24,27 +26,21 @@ fun Application.module() {
     }
     install(Koin) {
         slf4jLogger()
-        modules(
-            module {
-                single { MongoClient.create(getMongoUriProperty()) }
-                single { getMongoDatabaseProperty(this) }
-            },
-            module {
-                single { DatabaseUtils }
-                single<CarWashRepository> { CarWashRepositoryImpl(get(), get()) }
-            })
+        modules(mongoModule(getMongoUri(), getMongoDb()), dataBaseModule, repositoryModule,)
     }
-    configureRouting()
     configureDatabases()
+    configureFirebase()
+    configureSockets()
+
+    configureRouting()
 }
 
-private fun Application.getMongoUriProperty(): String {
+private fun Application.getMongoUri(): String {
     return environment.config.propertyOrNull("ktor.mongo.uri")?.getString()
         ?: throw RuntimeException("Failed to access MongoDataBase URI.")
 }
 
-private fun Application.getMongoDatabaseProperty(scope: Scope): MongoDatabase {
-    val dbName = environment.config.propertyOrNull("ktor.mongo.database")?.getString()
+private fun Application.getMongoDb(): String {
+    return environment.config.propertyOrNull("ktor.mongo.database")?.getString()
         ?: throw RuntimeException("Failed to access MongoDataBase")
-    return scope.get<MongoClient>().getDatabase(dbName)
 }

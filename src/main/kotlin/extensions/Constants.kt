@@ -1,0 +1,13 @@
+package kg.automoika.extensions
+
+const val BASE_URL = "localhost:8080"
+
+const val STATIC_LOCAL_FILES_FOLDER = "static-local-images/"
+const val POINTS_LOCAL_IMAGES_DIRECTORY = "car_points_images/"
+const val POINTS_LOCAL_IMAGE_FULL_PATH = "$STATIC_LOCAL_FILES_FOLDER/$POINTS_LOCAL_IMAGES_DIRECTORY"
+
+const val USERS_LOCAL_IMAGES_DIRECTORY = "users_images/"
+const val USERS_LOCAL_IMAGE_FULL_PATH = "$STATIC_LOCAL_FILES_FOLDER/$USERS_LOCAL_IMAGES_DIRECTORY"
+
+const val EXTERNAL_POINT_IMAGE_PATH = "/images"
+const val EXTERNAL_IMAGE_PATH = "$BASE_URL$EXTERNAL_POINT_IMAGE_PATH"

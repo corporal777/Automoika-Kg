@@ -1,44 +1,119 @@
 package kg.automoika.routes
 
-import io.ktor.client.*
-import io.ktor.client.call.*
-import io.ktor.client.request.forms.*
-import io.ktor.client.statement.*
+import com.google.gson.Gson
 import io.ktor.http.*
 import io.ktor.http.content.*
 import io.ktor.server.application.*
 import io.ktor.server.request.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
-import kg.automoika.data.CarWashModel
+import kg.automoika.cache.AppData
+import kg.automoika.data.body.CarWashBody
+import kg.automoika.data.body.CarWashBody.Companion.setBackgroundImage
+import kg.automoika.data.body.CarWashBody.Companion.setData
+import kg.automoika.data.body.CarWashFreeBoxesBody
+import kg.automoika.data.remote.CarWashImageModel
+import kg.automoika.data.response.CarWashShortResponse
+import kg.automoika.data.response.DataResponse
+import kg.automoika.extensions.BASE_URL
+import kg.automoika.extensions.EXTERNAL_POINT_IMAGE_PATH
+import kg.automoika.extensions.FileUtils.loadImagesToFirebase
+import kg.automoika.extensions.FileUtils.saveImageLocal
+import kg.automoika.extensions.POINTS_LOCAL_IMAGE_FULL_PATH
+import kg.automoika.extensions.createHttpClient
+import kg.automoika.repository.AuthRepository
 import kg.automoika.repository.CarWashRepository
-import org.jetbrains.exposed.exceptions.ExposedSQLException
 import org.koin.ktor.ext.inject
-import java.lang.reflect.Constructor
 
 fun Route.carWashRoutes() {
     val repository by inject<CarWashRepository>()
+    val auth by inject<AuthRepository>()
+    val appData by inject<AppData>()
 
-    get("v1/notes") {}
+    get("v1/car-wash-detail/{id}") {
+        if (!auth.checkAuth(call)) return@get
 
-    post("v1/create-car-wash") {
-        val request = call.receive<CarWashModel>()
-        val noteResponse = repository.createCarWash(request)
-        if (noteResponse != null) call.respond(HttpStatusCode.OK)
-        else call.respond(HttpStatusCode.Conflict)
-    }
-
-    post("v1/add-task"){
-        try {
-            val result = repository.addTask()
-            result?.let {
-                call.respond(HttpStatusCode.OK)
-            } ?: call.respond(HttpStatusCode.NotImplemented,"Error adding car wash")
-        }catch (e: ExposedSQLException){
-            call.respond(HttpStatusCode.BadRequest,e.message ?: "SQL Exception!!")
+        val id = call.parameters["id"]
+        if (id.isNullOrEmpty()) call.respond(HttpStatusCode.BadRequest)
+        else {
+            val carWashDetail = repository.getCarWashById(id)
+            if (carWashDetail != null) call.respond(carWashDetail)
+            else call.respond(HttpStatusCode.NotFound)
         }
     }
 
+    get("v1/car-wash-list") {
+        if (!auth.checkAuth(call)) return@get
+
+        val params = call.request.queryParameters
+        val dataList = repository.getCarWashList(params)
+
+        if (dataList.isEmpty())
+            call.respond(HttpStatusCode.OK, DataResponse.fromList(emptyList<CarWashShortResponse>()))
+        else call.respond(HttpStatusCode.OK, DataResponse.fromList(dataList))
+    }
+
+
+    post("v1/create-car-wash") {
+        if (!auth.checkAuth(call)) return@post
+
+        val imagesList = arrayListOf<CarWashImageModel>()
+        val carWashBody = CarWashBody()
+        try {
+            call.receiveMultipart().forEachPart { partData ->
+                if (partData is PartData.FormItem) carWashBody.setData(partData)
+                else if (partData is PartData.FileItem){
+                    val fileName = partData.saveImageLocal(POINTS_LOCAL_IMAGE_FULL_PATH) ?: return@forEachPart
+                    val fileUrl = "${BASE_URL}${EXTERNAL_POINT_IMAGE_PATH}/$fileName"
+                    if (partData.name == "backgroundImage") carWashBody.setBackgroundImage(fileName, fileUrl)
+                    else imagesList.add(CarWashImageModel(fileName, fileUrl))
+                } else return@forEachPart
+            }
+
+            val response = repository.createCarWashPoint(carWashBody, imagesList)
+            if (response != null) call.respond(HttpStatusCode.Created, response)
+            else call.respond(HttpStatusCode.BadRequest)
+        } catch (e: Exception) {
+            e.printStackTrace()
+            call.respond(HttpStatusCode.InternalServerError, e.message ?: "")
+        }
+    }
+
+
+
+    post("v1/upload-point-images") {
+        val client = createHttpClient()
+        val imagesList = arrayListOf<String>()
+        var count = 0
+        call.receiveMultipart().forEachPart { part ->
+            if (part is PartData.FileItem) {
+                call.application.environment.log.error(part.originalFileName)
+                val fileBytes = part.streamProvider().readBytes()
+                imagesList.add(loadImagesToFirebase(client, fileBytes, part.originalFileName ?: "image.jpeg", count))
+                count++
+            }
+            part.dispose()
+        }
+        client.close()
+
+
+        if (imagesList.isEmpty()) {
+            call.respond(HttpStatusCode.BadRequest, "Image Not Uploaded")
+        } else call.respond(HttpStatusCode.OK)
+    }
+
+    post("v1/send-free-boxes") {
+        if (!auth.checkAuth(call)) return@post
+
+        val request = call.receive<CarWashFreeBoxesBody>()
+        try {
+            val update = repository.updateCarWashBoxesState(request)
+            if (update) appData.sendMessage(Gson().toJson(request))
+            call.respond(HttpStatusCode.OK)
+        } catch (e : Exception){
+            call.respond(HttpStatusCode.BadRequest)
+        }
+    }
 
 }
 
