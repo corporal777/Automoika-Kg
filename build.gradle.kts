@@ -13,13 +13,15 @@ plugins {
     kotlin("jvm") version "2.1.10"
     id("io.ktor.plugin") version "2.3.7"
     id("org.jetbrains.kotlin.plugin.serialization") version "2.1.10"
+    id("com.github.johnrengelman.shadow") version "7.0.0"
 }
 
 group = "kg.automoika"
 version = "0.0.1"
 
 application {
-    mainClass = "io.ktor.server.tomcat.jakarta.EngineMain"
+    //mainClass = "io.ktor.server.tomcat.jakarta.EngineMain"
+    mainClass = "kg.automoika.ApplicationKt"
 
     val isDevelopment: Boolean = project.ext.has("development")
     applicationDefaultJvmArgs = listOf("-Dio.ktor.development=$isDevelopment")
@@ -29,6 +31,35 @@ repositories {
     mavenCentral()
 }
 
+tasks.withType<KotlinCompile>().configureEach {
+    compilerOptions {
+        jvmTarget.set(JvmTarget.JVM_18)
+    }
+}
+
+ktor {
+    docker {
+        jreVersion.set(JavaVersion.VERSION_17)
+        externalRegistry.set(
+            io.ktor.plugin.features.DockerImageRegistry.dockerHub(
+                appName = provider { "ktor-app" },
+                username = providers.environmentVariable("rysbek123"),
+                password = providers.environmentVariable("Vendetta123")
+            )
+        )
+    }
+}
+
+tasks {
+    shadowJar {
+        manifest {
+            attributes(Pair("Main-Class", "kg.automoika.ApplicationKt"))
+        }
+    }
+}
+
+
+
 dependencies {
     implementation(kotlin("stdlib-jdk8"))
     implementation("io.ktor:ktor-server-core-jvm")
@@ -37,14 +68,13 @@ dependencies {
     implementation("io.ktor:ktor-serialization-gson-jvm")
     implementation("io.ktor:ktor-server-tomcat-jvm")
     implementation("ch.qos.logback:logback-classic:$logback_version")
-    implementation("io.ktor:ktor-server-config-yaml:2.3.8")
+    //implementation("io.ktor:ktor-server-config-yaml:2.3.8")
     implementation("io.ktor:ktor-server-websockets:$ktor_version")
     implementation("io.ktor:ktor-network:$ktor_version")
 
 
     //ktor client
     implementation("io.ktor:ktor-client-core:$ktor_version")
-    implementation("io.ktor:ktor-client-cio:$ktor_version")
     implementation("io.ktor:ktor-client-cio-jvm:$ktor_version")
     implementation("io.ktor:ktor-client-content-negotiation:$ktor_version")
     implementation("io.ktor:ktor-serialization-kotlinx-json:$ktor_version")
@@ -61,24 +91,9 @@ dependencies {
     implementation("org.jetbrains.exposed:exposed-core:$exposed_version")
     implementation("org.jetbrains.exposed:exposed-dao:$exposed_version")
     implementation("org.jetbrains.exposed:exposed-jdbc:$exposed_version")
-    implementation("com.h2database:h2:$h2_version")
     implementation("org.postgresql:postgresql:42.2.2")
 
     //Firebase
     implementation("com.google.firebase:firebase-admin:7.1.0")
 }
 
-
-tasks.withType<KotlinCompile>().configureEach {
-    compilerOptions {
-        jvmTarget.set(JvmTarget.JVM_18)
-    }
-}
-//val compileKotlin: KotlinCompile by tasks
-//compileKotlin.kotlinOptions {
-//    jvmTarget = "18"
-//}
-//val compileTestKotlin: KotlinCompile by tasks
-//compileTestKotlin.kotlinOptions {
-//    jvmTarget = "18"
-//}

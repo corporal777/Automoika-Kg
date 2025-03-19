@@ -1,10 +1,14 @@
 package kg.automoika.db
 
+import com.google.rpc.Code
+import kg.automoika.data.response.CodeModel
 import kg.automoika.data.response.TokenResponse
 import kg.automoika.extensions.generateId
 import kg.automoika.extensions.generateToken
 import kotlinx.coroutines.Dispatchers
 import org.jetbrains.exposed.sql.ResultRow
+import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
+import org.jetbrains.exposed.sql.deleteWhere
 import org.jetbrains.exposed.sql.insert
 import org.jetbrains.exposed.sql.select
 import org.jetbrains.exposed.sql.transactions.experimental.newSuspendedTransaction
@@ -16,17 +20,9 @@ object AuthDatabase {
     }
 
     suspend fun getToken(token : String) = suspendTransaction {
-        val local = TokenTable.select { TokenTable.token eq token }.firstOrNull()
-        if (local == null) null else resultRowToToken(local)
-    }
-
-    suspend fun getTokenById(id : String) = suspendTransaction {
-        try {
-            val local = TokenTable.select { TokenTable.id eq id.toInt() }.firstOrNull()
-            if (local == null) null else resultRowToToken(local)
-        } catch (e: Exception) {
-            null
-        }
+        val local = TokenTable.select {
+            TokenTable.token eq token }.firstOrNull()
+        if (local == null) null else TokenTable.toResponse(local)
     }
 
     suspend fun createToken() = suspendTransaction {
@@ -36,15 +32,31 @@ object AuthDatabase {
             it[createdAt] = System.currentTimeMillis().toString()
         }.resultedValues?.firstOrNull()
 
-        if (token != null) resultRowToToken(token) else null
+        if (token != null) TokenTable.toResponse(token) else null
     }
 
-    private fun resultRowToToken(row: ResultRow): TokenResponse {
-        return TokenResponse(
-            id = row[TokenTable.id].toString(),
-            token = row[TokenTable.token],
-            createdAt = row[TokenTable.createdAt]
-        )
+    suspend fun createCode(login : String) = suspendTransaction {
+        CodesTable.deleteWhere { phone eq login }
+
+        val token = CodesTable.insert {
+            it[id] = generateId().toInt()
+            it[code] = generateId()
+            it[phone] = login
+        }.resultedValues?.firstOrNull()
+
+        if (token != null) CodesTable.toResponse(token).code else "998877"
     }
+
+    suspend fun checkCode(code : String, phone : String) = suspendTransaction {
+        val local = CodesTable.select { CodesTable.phone eq phone }.firstOrNull()
+        if (local == null) false
+        else {
+            val result = CodesTable.toResponse(local)
+            if (result.code == code) CodesTable.deleteWhere { CodesTable.phone eq phone } > 0
+            else false
+        }
+    }
+
+
 
 }

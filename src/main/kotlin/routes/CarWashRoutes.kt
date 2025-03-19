@@ -15,12 +15,8 @@ import kg.automoika.data.body.CarWashFreeBoxesBody
 import kg.automoika.data.remote.CarWashImageModel
 import kg.automoika.data.response.CarWashShortResponse
 import kg.automoika.data.response.DataResponse
-import kg.automoika.extensions.BASE_URL
-import kg.automoika.extensions.EXTERNAL_POINT_IMAGE_PATH
-import kg.automoika.extensions.FileUtils.loadImagesToFirebase
-import kg.automoika.extensions.FileUtils.saveImageLocal
-import kg.automoika.extensions.POINTS_LOCAL_IMAGE_FULL_PATH
-import kg.automoika.extensions.createHttpClient
+import kg.automoika.extensions.FileUtils.uploadImageToFirebase
+import kg.automoika.extensions.generateId
 import kg.automoika.repository.AuthRepository
 import kg.automoika.repository.CarWashRepository
 import org.koin.ktor.ext.inject
@@ -48,9 +44,8 @@ fun Route.carWashRoutes() {
         val params = call.request.queryParameters
         val dataList = repository.getCarWashList(params)
 
-        if (dataList.isEmpty())
-            call.respond(HttpStatusCode.OK, DataResponse.fromList(emptyList<CarWashShortResponse>()))
-        else call.respond(HttpStatusCode.OK, DataResponse.fromList(dataList))
+        if (dataList.isEmpty()) call.respond(DataResponse.fromList(emptyList<CarWashShortResponse>()))
+        else call.respond(DataResponse.fromList(dataList))
     }
 
 
@@ -58,13 +53,15 @@ fun Route.carWashRoutes() {
         if (!auth.checkAuth(call)) return@post
 
         val imagesList = arrayListOf<CarWashImageModel>()
-        val carWashBody = CarWashBody()
+        val carWashBody = CarWashBody(generateId())
         try {
             call.receiveMultipart().forEachPart { partData ->
                 if (partData is PartData.FormItem) carWashBody.setData(partData)
                 else if (partData is PartData.FileItem){
-                    val fileName = partData.saveImageLocal(POINTS_LOCAL_IMAGE_FULL_PATH) ?: return@forEachPart
-                    val fileUrl = "${BASE_URL}${EXTERNAL_POINT_IMAGE_PATH}/$fileName"
+                    val fileName = "car-wash-${carWashBody.id}-image-${generateId()}"
+                    val fileUrl = uploadImageToFirebase(partData.streamProvider().readBytes(), fileName)
+                    //val fileName = partData.saveImageLocal(POINTS_LOCAL_IMAGE_FULL_PATH) ?: return@forEachPart
+                    //val fileUrl = "${BASE_URL}${EXTERNAL_POINT_IMAGE_PATH}/$fileName"
                     if (partData.name == "backgroundImage") carWashBody.setBackgroundImage(fileName, fileUrl)
                     else imagesList.add(CarWashImageModel(fileName, fileUrl))
                 } else return@forEachPart
@@ -82,24 +79,24 @@ fun Route.carWashRoutes() {
 
 
     post("v1/upload-point-images") {
-        val client = createHttpClient()
-        val imagesList = arrayListOf<String>()
-        var count = 0
-        call.receiveMultipart().forEachPart { part ->
-            if (part is PartData.FileItem) {
-                call.application.environment.log.error(part.originalFileName)
-                val fileBytes = part.streamProvider().readBytes()
-                imagesList.add(loadImagesToFirebase(client, fileBytes, part.originalFileName ?: "image.jpeg", count))
-                count++
-            }
-            part.dispose()
-        }
-        client.close()
-
-
-        if (imagesList.isEmpty()) {
-            call.respond(HttpStatusCode.BadRequest, "Image Not Uploaded")
-        } else call.respond(HttpStatusCode.OK)
+//        val client = createHttpClient()
+//        val imagesList = arrayListOf<String>()
+//        var count = 0
+//        call.receiveMultipart().forEachPart { part ->
+//            if (part is PartData.FileItem) {
+//                call.application.environment.log.error(part.originalFileName)
+//                val fileBytes = part.streamProvider().readBytes()
+//                imagesList.add(uploadImageToFirebase(client, fileBytes, part.originalFileName ?: "image.jpeg", count))
+//                count++
+//            }
+//            part.dispose()
+//        }
+//        client.close()
+//
+//
+//        if (imagesList.isEmpty()) {
+//            call.respond(HttpStatusCode.BadRequest, "Image Not Uploaded")
+//        } else call.respond(HttpStatusCode.OK)
     }
 
     post("v1/send-free-boxes") {

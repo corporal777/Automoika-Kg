@@ -8,11 +8,15 @@ data class AccountRemote(
     @BsonId
     val id: String,
     val accountType : String,
-    val payment : String
+    val login : String
 ){
     companion object {
-        fun setCarWashAccount(id: String): AccountRemote {
-            return AccountRemote(id, "car-wash-owner", "absent")
+        fun setCarWashAccount(id: String, login : String): AccountRemote {
+            return AccountRemote(id, "car-wash", login)
+        }
+
+        fun setUserAccount(id: String, login : String): AccountRemote {
+            return AccountRemote(id, "user", login)
         }
     }
 }

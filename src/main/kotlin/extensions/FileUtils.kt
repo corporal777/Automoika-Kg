@@ -6,10 +6,17 @@ import io.ktor.client.call.*
 import io.ktor.client.statement.*
 import io.ktor.http.*
 import io.ktor.http.content.*
-import kg.automoika.data.response.FirebasePhotoResponseModel
+import kg.automoika.data.response.FBImageModel
 import java.io.File
 
 object FileUtils {
+
+    //private val fbBucketName = "tam-tam-8b2a7.appspot.com"
+    private val fbBucketName = "automoika-kg-android.firebasestorage.app"
+
+    fun deleteLocalFile(path: String){
+        File(path).delete()
+    }
 
     fun PartData.FileItem.saveImageLocal(path: String): String? {
         try {
@@ -27,21 +34,16 @@ object FileUtils {
         }
     }
 
-    fun deleteLocalFile(path: String){
-        File(path).delete()
-    }
 
-    suspend fun loadImagesToFirebase(client: HttpClient, bytes: ByteArray, noteId: String, index: Int): String {
-        //val fileName = "($noteId)-$index"
-        val fileName = noteId
-        val url = "https://firebasestorage.googleapis.com/v0/b/tam-tam-8b2a7.appspot.com/o/$fileName"
+
+    suspend fun uploadImageToFirebase(bytes: ByteArray, fileName : String): String {
+        val client = createHttpClient()
+        val url = "https://firebasestorage.googleapis.com/v0/b/$fbBucketName/o/$fileName"
         val response: HttpResponse = client.submitFormWithBinaryData(url, bytes, fileName)
 
         var imageUrl = ""
         if (response.status == HttpStatusCode.OK) {
-            val json = response.body<FirebasePhotoResponseModel>()
-
-            val token = json.downloadTokens
+            val token = response.body<FBImageModel>().downloadTokens
             imageUrl = URLBuilder(url).apply {
                 set {
                     parameters.append("alt", "media")
@@ -49,11 +51,12 @@ object FileUtils {
                 }
             }.buildString()
         }
+        client.close()
         return imageUrl
     }
 
     suspend fun deleteImagesFromFirebase(imgName : String): Boolean {
-        return StorageClient.getInstance().bucket("tam-tam-8b2a7.appspot.com")
+        return StorageClient.getInstance().bucket(fbBucketName)
             .get(imgName).delete()
     }
 }

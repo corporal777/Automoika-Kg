@@ -1,6 +1,7 @@
 package kg.automoika.db
 
-import kg.automoika.db.CarWashBoxesTable.autoIncrement
+import kg.automoika.data.response.TokenResponse
+import org.jetbrains.exposed.sql.ResultRow
 import org.jetbrains.exposed.sql.Table
 
 object TokenTable : Table() {
@@ -9,4 +10,8 @@ object TokenTable : Table() {
     val createdAt = varchar("createdAt", 255)
 
     override val primaryKey: PrimaryKey = PrimaryKey(id)
+
+    fun toResponse(row: ResultRow): TokenResponse {
+        return TokenResponse(row[token], row[createdAt])
+    }
 }

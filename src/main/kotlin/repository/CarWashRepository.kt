@@ -13,4 +13,5 @@ interface CarWashRepository {
     suspend fun getCarWashById(id : String) : CarWashRemote?
 
     suspend fun updateCarWashBoxesState(model: CarWashFreeBoxesBody) : Boolean
+
 }

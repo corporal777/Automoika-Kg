@@ -2,8 +2,12 @@ package kg.automoika.data.body
 
 import io.ktor.http.content.*
 import kg.automoika.data.remote.CarWashImageModel
+import kg.automoika.extensions.FileUtils.uploadImageToFirebase
+import kg.automoika.extensions.generateId
+import kg.automoika.extensions.generateShortId
 
 data class CarWashBody(
+    val id : String,
     var name: String = "",
     var description: String = "",
 
@@ -21,14 +25,20 @@ data class CarWashBody(
     var telegram : String = "",
     var instagram : String = "",
 
-    var cleaningType : String = ""
 
+    var type : String = ""
     ) {
     companion object {
         fun CarWashBody.setData(partData: PartData.FormItem) {
             when (partData.name) {
                 "name" -> name = partData.value
                 "description" -> description = partData.value
+
+                "city" -> city = partData.value
+                "street" -> street = partData.value
+                "lat" -> lat = partData.value
+                "lon" -> lon = partData.value
+                "wayDescription" -> wayDescription = partData.value
 
                 "boxes" -> boxesCount = partData.value
 
@@ -37,13 +47,7 @@ data class CarWashBody(
                 "telegram" -> telegram = partData.value
                 "instagram" -> instagram = partData.value
 
-                "city" -> city = partData.value
-                "street" -> street = partData.value
-                "lat" -> lat = partData.value
-                "lon" -> lon = partData.value
-                "wayDescription" -> wayDescription = partData.value
-
-                "cleaningType" -> cleaningType = partData.value
+                "type" -> type = partData.value
             }
         }
 

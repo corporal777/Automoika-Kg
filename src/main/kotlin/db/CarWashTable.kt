@@ -21,10 +21,3 @@ object CarWashTable : Table() {
 
     override val primaryKey: PrimaryKey = PrimaryKey(id)
 }
-
-object CarWashBoxesTable : Table() {
-    val id = integer("id").autoIncrement()
-    val freeBoxes = varchar("freeBoxes", 255)
-
-    override val primaryKey: PrimaryKey = PrimaryKey(id)
-}

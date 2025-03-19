@@ -3,22 +3,24 @@ package kg.automoika
 import com.google.auth.oauth2.GoogleCredentials
 import com.google.firebase.FirebaseApp
 import com.google.firebase.FirebaseOptions
+import com.google.firebase.messaging.FirebaseMessaging
+import com.google.firebase.messaging.Message
+import com.google.firebase.messaging.Notification
 import io.ktor.network.selector.*
 import io.ktor.network.sockets.*
 import io.ktor.serialization.kotlinx.*
 import io.ktor.server.application.*
+import io.ktor.server.config.*
 import io.ktor.server.http.content.*
 import io.ktor.server.routing.*
+import io.ktor.server.util.*
 import io.ktor.server.websocket.*
 import io.ktor.utils.io.*
-import kg.automoika.db.CarWashBoxesTable
 import kg.automoika.db.CarWashTable
+import kg.automoika.db.CodesTable
 import kg.automoika.db.TokenTable
 import kg.automoika.extensions.*
-import kg.automoika.routes.authRoutes
-import kg.automoika.routes.carWashRoutes
-import kg.automoika.routes.socketRoutes
-import kg.automoika.routes.userRoutes
+import kg.automoika.routes.*
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.json.Json
@@ -33,44 +35,44 @@ import kotlinx.coroutines.*
 fun Application.configureRouting() {
     routing {
         carWashRoutes()
+        databaseRoutes()
         authRoutes()
+        locationRoutes()
         socketRoutes()
         userRoutes()
         configureStaticFolders()
     }
 }
 
-fun Routing.configureStaticFolders(){
+fun Routing.configureStaticFolders() {
     static("/") {
         staticRootFolder = File(STATIC_LOCAL_FILES_FOLDER)
-        static(EXTERNAL_POINT_IMAGE_PATH){
+        static(EXTERNAL_POINT_IMAGE_PATH) {
             files(POINTS_LOCAL_IMAGES_DIRECTORY)
             files(USERS_LOCAL_IMAGES_DIRECTORY)
         }
     }
 }
 
-fun Application.configureDatabases() {
+fun Application.configureDatabases(config: ApplicationConfig) {
     val db = Database.connect(
-        "jdbc:postgresql://localhost:5432/automoika-db?currentSchema=car-washes",
-        user = "postgres",
-        password = "12345",
-        driver = "org.postgresql.Driver"
+        url = config.property("storage.jdbcURL").getString(),
+        user = config.property("storage.user").getString(),
+        password = config.property("storage.password").getString(),
+        driver = config.property("storage.driverClassName").getString()
     )
     transaction(db) {
-        SchemaUtils.create(CarWashTable, TokenTable)
+        SchemaUtils.create(CarWashTable, TokenTable, CodesTable)
     }
 }
 
-fun Application.configureFirebase() {
-    val fileContent = javaClass.getResource("tam-tam-8b2a7-firebase-adminsdk-t7lnx-74ddd78486.json")?.readText()
-    if (fileContent.isNullOrEmpty()) return
+fun Application.configureFirebase(config: ApplicationConfig) {
+    val file = File(config.property("firebase.adminSdkFile").getString())
     val options = FirebaseOptions.Builder()
-        .setCredentials(GoogleCredentials.fromStream(FileInputStream(fileContent)))
-        .setServiceAccountId("firebase-adminsdk-t7lnx@tam-tam-8b2a7.iam.gserviceaccount.com")
-        .setDatabaseUrl("https://tam-tam-8b2a7-default-rtdb.firebaseio.com")
+        .setCredentials(GoogleCredentials.fromStream(FileInputStream(file)))
+        .setServiceAccountId(config.property("firebase.accountId").getString())
         .build()
-    FirebaseApp.initializeApp(options)
+    FirebaseApp.initializeApp(options, "ktor-app")
 }
 
 

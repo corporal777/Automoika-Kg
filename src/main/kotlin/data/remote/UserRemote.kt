@@ -13,23 +13,23 @@ data class UserRemote(
     val id: String,
     val name: String,
     val lastName: String,
+    val middleName: String,
     val createdAt: String,
     val image: CarWashImageModel,
-    val address: UserLocationModel,
-    val contacts : UserContactsModel,
+    val login : UserContactsModel
 ) {
-    fun toResponse() : UserResponse = UserResponse(id, name, lastName, image, address, contacts)
+    fun toResponse() : UserResponse = UserResponse(id, name, lastName, middleName, image, login)
 
     companion object {
-        fun fromBody(body: UserBody ): UserRemote {
+        fun create(body: UserBody): UserRemote {
             return UserRemote(
-                id = generateId(),
+                id = body.id,
                 name = body.name,
                 lastName = body.lastName,
+                middleName = body.middleName,
                 createdAt = System.currentTimeMillis().toString(),
                 image = body.image ?: CarWashImageModel("",""),
-                address = UserLocationModel(body.street, body.city, body.lat, body.lon),
-                contacts = UserContactsModel(body.phone, body.whatsapp, false),
+                login = UserContactsModel(body.phone, true)
             )
         }
     }
@@ -39,15 +39,5 @@ data class UserRemote(
 @Serializable
 data class UserContactsModel(
     val phone : String,
-    val whatsapp : String,
-    val showInProfile : Boolean
-)
-
-
-@Serializable
-data class UserLocationModel(
-    val street : String,
-    val city : String,
-    val lat : String,
-    val lon : String,
+    val isConfirmed : Boolean,
 )

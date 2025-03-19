@@ -11,9 +11,14 @@ fun Route.socketRoutes() {
     val appData by inject<AppData>()
 
     webSocket("/car-wash-point"){
-        send("Connected to WebSocket")
-        appData.sharedFlow.collectLatest { message ->
-            send(message)
+        try {
+            send("Connected to WebSocket")
+            appData.sharedFlow.collectLatest { message ->
+                send(message)
+            }
+        } catch (e : Exception){
+
         }
+
     }
 }

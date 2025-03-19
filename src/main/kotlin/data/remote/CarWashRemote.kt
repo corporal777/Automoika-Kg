@@ -20,12 +20,12 @@ data class CarWashRemote(
     val boxesCount: String,
     var freeBoxes : List<String>,
     var inFavorite : List<String>,
-    val cleaningType : String
+    val type : String
 ){
     companion object {
         fun fromBody(body: CarWashBody, imagesList: List<CarWashImageModel>): CarWashRemote {
             return CarWashRemote(
-                id = generateId(),
+                id = body.id,
                 name = body.name,
                 description = body.description,
                 createdAt = System.currentTimeMillis().toString(),
@@ -38,7 +38,7 @@ data class CarWashRemote(
                 contacts = CarWashContactsModel(body.phone, body.whatsapp, body.telegram, body.instagram),
 
                 inFavorite = listOf(""),
-                cleaningType = body.cleaningType
+                type = body.type
             )
         }
     }

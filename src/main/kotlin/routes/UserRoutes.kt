@@ -18,6 +18,7 @@ import kg.automoika.extensions.BASE_URL
 import kg.automoika.extensions.EXTERNAL_POINT_IMAGE_PATH
 import kg.automoika.extensions.FileUtils.saveImageLocal
 import kg.automoika.extensions.POINTS_LOCAL_IMAGE_FULL_PATH
+import kg.automoika.extensions.generateId
 import kg.automoika.repository.AuthRepository
 import kg.automoika.repository.UserRepository
 import org.koin.ktor.ext.inject
@@ -29,7 +30,7 @@ fun Route.userRoutes() {
     post("v1/create-user") {
         if (!auth.checkAuth(call)) return@post
         try {
-            val userBody = UserBody()
+            val userBody = UserBody(generateId())
             call.receiveMultipart().forEachPart { partData ->
                 if (partData is PartData.FormItem) userBody.setData(partData)
                 else if (partData is PartData.FileItem) userBody.setImage(partData)

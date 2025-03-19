@@ -37,7 +37,7 @@ object CarWashDatabase {
             it[boxesCount] = model.boxesCount
 
             it[inFavorite] = model.inFavorite.joinToString(",")
-            it[cleaningType] = model.cleaningType
+            it[cleaningType] = model.type
         }.insertedCount > 0
     }
 
@@ -57,8 +57,8 @@ object CarWashDatabase {
             this[CarWashTable.freeBoxes] = it.freeBoxes.joinToString(",")
 
             this[CarWashTable.inFavorite] = it.inFavorite.joinToString(",")
-            this[CarWashTable.cleaningType] = it.cleaningType
-        }
+            this[CarWashTable.cleaningType] = it.type
+        }.map { resultRowToCarWashResponse(it) }
     }
 
     suspend fun getCarWashLocal(id : String) = suspendTransaction {
